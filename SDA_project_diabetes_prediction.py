@@ -56,7 +56,7 @@ Chinese adults: a population-based cohort study. BMJ open, 8(9), e021768. https:
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import mean_squared_error, accuracy_score, confusion_matrix
+from sklearn.metrics import mean_squared_error, accuracy_score, confusion_matrix, classification_report
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,6 +64,8 @@ import seaborn as sns
 import pandas as pd
 # Loading in dataset
 df = pd.read_csv("diabetes_cleaned.csv")
+df.columns = df.columns.str.strip()
+
 print("Header: ")
 print(df.head())
 # We create the histogram of each feature to look for any statistical outliers.
@@ -177,10 +179,10 @@ dependent_variable_name = "Diabetes"
 y = df[dependent_variable_name]
 best_features_stepwise_Logit = stepwise_selection_wrapper(
     X, y, 
-    model=LinearRegression(), 
+    model=LogisticRegression(max_iter=2000, class_weight="balanced"), 
     direction='bidirectional', 
     k_features='best',
-    scoring='r2',
+    scoring='f1',
     cv=5
 )
 print("\n")
@@ -271,15 +273,16 @@ figure_number += 1
 y_diabetes = df['Diabetes']
 # Build feature matrix for logistic regression using features that are sufficiently correlated with FFPG
 X_logit = X_selection
-X_train, X_test, y_train, y_test = train_test_split(X_logit, y_diabetes, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X_logit, y_diabetes, test_size=0.2, random_state=42, stratify=y_diabetes)
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
-logreg = LogisticRegression(max_iter=1000)
+logreg = LogisticRegression(max_iter=5000, class_weight="balanced")
 logreg.fit(X_train_scaled, y_train)
 y_pred = logreg.predict(X_test_scaled)
 accuracy = accuracy_score(y_test, y_pred)
 conf_matrix = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(8, 5))
 plt.scatter(np.arange(len(y_test)), y_test, color='black', label='Actual Values', alpha=0.6)
 plt.scatter(np.arange(len(y_test)), y_pred, color='blue', label='Logistic Regression Predictions', alpha=0.6)
 plt.title(f'Figure {figure_number}: Actual values vs Logistic Regression Predictions based on correlation-selected features')
@@ -289,9 +292,11 @@ plt.legend()
 plt.savefig(f"Figure {figure_number} - Actual values vs Logistic Regression Predictions based on correlation-selected features.png")
 figure_number += 1
 print("\n===== Logistic Regression predicting Diabetes with Correlation Selected Features =====")
-print("Accuracy of Logistic Regression model:", accuracy)
+print("Accuracy:", accuracy)
 print("Confusion Matrix:\n", conf_matrix)
-print(f"=========================================================\n")
+print("Classification report:")
+print(classification_report(y_test, y_pred, digits=3, zero_division=0))
+print("=========================================================\n")
 
 ## Section 5B. Linear and Logistic Regression with Stepwise-Selected Features
 # Section 5B.I. Linear Regression for FFPG using stepwise-selected features
@@ -330,14 +335,14 @@ print(f"=========================================================\n")
 y_diabetes_sw = df['Diabetes']
 # Split (reuse X_stepwise with stepwise features)
 X_train_log_sw, X_test_log_sw, y_train_log_sw, y_test_log_sw = train_test_split(
-    X_stepwise, y_diabetes_sw, test_size=0.2, random_state=42
+    X_stepwise, y_diabetes_sw, test_size=0.2, random_state=42, stratify=y_diabetes_sw
 )
 # Scale
 scaler_log_sw = StandardScaler()
 X_train_scaled_log_sw = scaler_log_sw.fit_transform(X_train_log_sw)
 X_test_scaled_log_sw = scaler_log_sw.transform(X_test_log_sw)
 # Train model
-logreg_sw = LogisticRegression(max_iter=1000)
+logreg_sw = LogisticRegression(max_iter=1000, class_weight="balanced")
 logreg_sw.fit(X_train_scaled_log_sw, y_train_log_sw)
 # Predict
 y_pred_log_sw = logreg_sw.predict(X_test_scaled_log_sw)
@@ -347,7 +352,9 @@ conf_matrix_log_sw = confusion_matrix(y_test_log_sw, y_pred_log_sw)
 print("\n===== Diabetes Logistic Regression with Stepwise-Selected Features =====")
 print("Accuracy:", accuracy_log_sw)
 print("Confusion Matrix:\n", conf_matrix_log_sw)
-print(f"=========================================================\n")
+print("Classification report:")
+print(classification_report(y_test_log_sw, y_pred_log_sw, digits=3, zero_division=0))
+print("=========================================================\n")
 # Comparing the accuracy and confusion matrix between linear and logistics regression, we can observe that they have comparable accuracy of about 98%. 
 # We can analyse the results further by taking a look at a Predictions vs Actual Values Plot
 # Train linear regression model for Diabetes (for comparison with logistic regression)
