@@ -5,8 +5,6 @@ Description: After selecting relevant parameters, selected based on sufficient c
 or stepwise-model selection (B), linear (I) and logistic (II) regression models were constructed
 to predict the development of diabetes based on analysed physiological and metabolic parameters.
 
-Date of last modification: 13 December 2025
-
 Authors:
 Yael Ai, 14716674
 Jelmer van Dam, 14802333
